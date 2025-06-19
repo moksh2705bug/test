@@ -1,0 +1,90 @@
+{
+  "name": "AI Research & Strategy Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "research-strategy-webhook",
+        "httpMethod": "POST",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "name": "Inbound Research Topic",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        200,
+        300
+      ],
+      "id": "1"
+    },
+    {
+      "parameters": {
+        "functionCode": "\n// Extract 'topic' from the incoming payload\nconst topic = $json.body?.topic || 'No topic provided';\n\n// Build prompt for AI\nconst prompt = `Provide a concise competitive landscape, key metrics, and recent trends for: ${topic}. Format as JSON with sections: overview, competitors, opportunities, references.`;\n\n// Call OpenAI (replace with your key in credentials)\nconst { Configuration, OpenAIApi } = require('openai');\nconst configuration = new Configuration({\n  apiKey: $credentials.openaiApi.apiKey,\n});\nconst openai = new OpenAIApi(configuration);\n\nconst completion = await openai.createChatCompletion({\n  model: 'gpt-4o-mini',\n  messages: [\n    { role: 'system', content: 'You are a senior market analyst.' },\n    { role: 'user', content: prompt }\n  ],\n  temperature: 0.3\n});\n\nconst aiResponse = completion.data.choices[0].message.content;\n\nreturn [{ json: { topic, aiResponse } }];\n"
+      },
+      "name": "AI Market Analyst",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        500,
+        300
+      ],
+      "id": "2",
+      "credentials": {
+        "openaiApi": {
+          "name": "OpenAI Account",
+          "type": "openaiApi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "options": {},
+        "sheetId": "YOUR_GOOGLE_SHEET_ID",
+        "range": "Sheet1!A:B",
+        "valueInputMode": "USER_ENTERED",
+        "rawData": false
+      },
+      "name": "Log to Google Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 2,
+      "position": [
+        800,
+        300
+      ],
+      "id": "3",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets OAuth2",
+          "type": "googleSheetsOAuth2Api"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Inbound Research Topic": {
+      "main": [
+        [
+          {
+            "node": "AI Market Analyst",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Market Analyst": {
+      "main": [
+        [
+          {
+            "node": "Log to Google Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {}
+}
