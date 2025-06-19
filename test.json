@@ -1,0 +1,67 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "functionCode": "const axios = require('axios');\n\nconst response = await axios.post('https://your-ai-api-endpoint.com', { query: $json['query'] });\nreturn { json: response.data };"
+      },
+      "name": "AI Query Processor",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "notesInFlow": false
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "resource": "data",
+        "data": {
+          "query": "Research topic"
+        }
+      },
+      "name": "Research Data Collector",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [450, 300],
+      "notesInFlow": false
+    },
+    {
+      "parameters": {
+        "resource": "spreadsheet",
+        "operation": "addRow",
+        "data": {
+          "column1": "={{$json[\"query\"]}}",
+          "column2": "={{$json[\"ai_response\"]}}"
+        }
+      },
+      "name": "Add Data to Spreadsheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 1,
+      "position": [650, 300],
+      "notesInFlow": false
+    }
+  ],
+  "connections": {
+    "AI Query Processor": {
+      "main": [
+        [
+          {
+            "node": "Research Data Collector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Research Data Collector": {
+      "main": [
+        [
+          {
+            "node": "Add Data to Spreadsheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
